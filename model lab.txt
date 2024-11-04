@@ -1,0 +1,377 @@
+import java.io.*;
+import java.util.*;
+
+class LEAKYB {
+    public static void main(String[] args) {
+        int no_of_queries, storage, output_pkt_size;
+        int input_pkt_size, bucket_size, size_left;
+
+        // initial packets in the bucket
+        storage = 0;
+
+        // total no. of times bucket content is checked
+        no_of_queries = 4;
+
+        // total no. of packets that can be accommodated in the bucket
+        bucket_size = 10;
+
+        // no. of packets that enters the bucket at a time
+        input_pkt_size = 4;
+
+        // no. of packets that exits the bucket at a time
+        output_pkt_size = 1;
+
+        for (int i = 0; i < no_of_queries; i++) {
+            size_left = bucket_size - storage;  // space left
+
+            if (input_pkt_size <= size_left) {
+                storage += input_pkt_size;
+            } else {
+                System.out.println("Packet loss = " + input_pkt_size);
+            }
+
+            System.out.println("Buffer size= " + storage + " out of bucket size= " + bucket_size);
+            storage -= output_pkt_size;
+
+            // Ensure storage doesn't go below 0
+            if (storage < 0) {
+                storage = 0;
+            }
+        }
+    }
+}
+
+
+--------------------------------------------------------------------------------------------------------------------
+
+import java.util.Scanner;
+public class ChecksumCalculator {
+        public static String addBinary(String a, String b) {
+        StringBuilder result = new StringBuilder();
+        int carry = 0;    
+        StringBuilder aBuilder = new StringBuilder(a);
+        StringBuilder bBuilder = new StringBuilder(b);    
+        while (aBuilder.length() < bBuilder.length()) 
+        {
+            aBuilder.insert(0, '0');
+        }
+        while (bBuilder.length() < aBuilder.length()) 
+        {
+            bBuilder.insert(0, '0');
+        }
+        for (int i = aBuilder.length() - 1; i >= 0; i--) 
+        {
+            int bitA = aBuilder.charAt(i) - '0';
+            int bitB = bBuilder.charAt(i) - '0';
+            int sum = bitA + bitB + carry;
+            result.append(sum % 2); 
+            carry = sum / 2; 
+        } 
+        if (carry > 0) {
+            result.append(carry);
+        } 
+       return result.reverse().toString();
+    }
+       public static String onesComplement(String binary) {
+        StringBuilder complement = new StringBuilder();
+        for (char bit : binary.toCharArray()) {
+            complement.append(bit == '0' ? '1' : '0');
+        }
+        return complement.toString();
+    }
+       public static boolean allOnes(String binary) {
+        for (char bit : binary.toCharArray()) {
+            if (bit != '1') {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("Enter the number of frames: ");
+        int m = scanner.nextInt();
+        System.out.println("Enter the number of bits per frame: ");
+        int n = scanner.nextInt();
+        scanner.nextLine(); 
+
+        String[] frames = new String[m];
+        System.out.println("Enter the frames (each frame should be " + n + " bits): ");
+        for (int i = 0; i < m; i++) {
+            frames[i] = scanner.nextLine();
+        }
+         String checksum = frames[0];
+        for (int i = 1; i < m; i++) {
+            checksum = addBinary(checksum, frames[i]);
+            if (checksum.length() > n) {
+                checksum = addBinary(checksum.substring(1), "1");
+            }
+        }
+        checksum = onesComplement(checksum);
+        System.out.println("Calculated checksum at sender: " + checksum);
+        System.out.println("Enter received frames (including the checksum): ");
+        String[] receivedFrames = new String[m + 1];
+        for (int i = 0; i <= m; i++) {
+            receivedFrames[i] = scanner.nextLine();
+        }
+        String receivedSum = receivedFrames[0];
+        for (int i = 1; i <= m; i++) {
+            receivedSum = addBinary(receivedSum, receivedFrames[i]);
+            if (receivedSum.length() > n) {
+                receivedSum = addBinary(receivedSum.substring(1), "1");
+            }
+        }
+        if (allOnes(receivedSum)) {
+            System.out.println("No error in received data.");
+        } else {
+            System.out.println("Error detected in received data.");
+        }
+        scanner.close();
+    }
+}
+
+--------------------------------------------------------------------------------------------------------------
+import java.util.*;
+
+class OSPF {
+    private int vertices;
+    private LinkedList<Edge>[] adjList;
+
+    // Edge class to represent a weighted edge in the graph
+    static class Edge {
+        int target, weight;
+
+        Edge(int target, int weight) {
+            this.target = target;
+            this.weight = weight;
+        }
+    }
+
+    // Constructor to initialize the graph with a given number of vertices
+    OSPF(int vertices) {
+        this.vertices = vertices;
+        adjList = new LinkedList[vertices];
+        for (int i = 0; i < vertices; i++) {
+            adjList[i] = new LinkedList<>();
+        }
+    }
+
+    // Method to add an edge to the graph
+    void addEdge(int source, int target, int weight) {
+        adjList[source].add(new Edge(target, weight));
+        adjList[target].add(new Edge(source, weight)); // for undirected graph
+    }
+
+    // Method to find the shortest path using Dijkstra's algorithm
+    void dijkstra(int source, int target) {
+        PriorityQueue<Edge> priorityQueue = new PriorityQueue<>(vertices, Comparator.comparingInt(e -> e.weight));
+        int[] distances = new int[vertices];
+        Arrays.fill(distances, Integer.MAX_VALUE);
+        distances[source] = 0;
+        priorityQueue.add(new Edge(source, 0));
+
+        while (!priorityQueue.isEmpty()) {
+            int u = priorityQueue.poll().target;
+
+            for (Edge edge : adjList[u]) {
+                int v = edge.target;
+                int weight = edge.weight;
+
+                if (distances[u] + weight < distances[v]) {
+                    distances[v] = distances[u] + weight;
+                    priorityQueue.add(new Edge(v, distances[v]));
+                }
+            }
+        }
+
+        // Print the shortest path to the specified target node
+        System.out.println("Shortest path from vertex " + source + " to vertex " + target
+                + " is " + distances[target]);
+    }
+
+    // Main method to demonstrate the program
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+
+        OSPF graph = new OSPF(6); // Initialize graph with 6 vertices
+        graph.addEdge(0, 1, 4);
+        graph.addEdge(0, 2, 3);
+        graph.addEdge(1, 2, 1);
+        graph.addEdge(1, 3, 2);
+        graph.addEdge(2, 3, 4);
+        graph.addEdge(3, 4, 2);
+        graph.addEdge(4, 5, 6);
+
+        System.out.print("Enter the source vertex: ");
+        int source = scanner.nextInt();
+
+        System.out.print("Enter the target vertex: ");
+        int target = scanner.nextInt();
+
+        graph.dijkstra(source, target);
+
+        scanner.close();
+    }
+}
+-----------------------------------------------------------------------------------------------------------------------------------------------
+import java.util.Scanner;
+
+public class BitStuffing {
+
+    // Method to perform bit stuffing
+    public static String bitStuffing(String data) {
+        StringBuilder stuffedData = new StringBuilder();
+        int consecutiveOnes = 0;
+
+        for (int i = 0; i < data.length(); i++) {
+            char bit = data.charAt(i);
+            stuffedData.append(bit);
+
+            if (bit == '1') {
+                consecutiveOnes++;
+                if (consecutiveOnes == 5) {
+                    // Insert a '0' after five consecutive '1's
+                    stuffedData.append('0');
+                    consecutiveOnes = 0;
+                }
+            } else {
+                consecutiveOnes = 0;
+            }
+        }
+        return stuffedData.toString();
+    }
+
+    // Method to perform bit unstuffing
+    public static String bitUnstuffing(String stuffedData) {
+        StringBuilder unstuffedData = new StringBuilder();
+        int consecutiveOnes = 0;
+
+        for (int i = 0; i < stuffedData.length(); i++) {
+            char bit = stuffedData.charAt(i);
+            unstuffedData.append(bit);
+
+            if (bit == '1') {
+                consecutiveOnes++;
+                if (consecutiveOnes == 5) {
+                    // Skip the stuffed '0' after five consecutive '1's
+                    i++;  // Skip the next character (should be '0')
+                    consecutiveOnes = 0;
+                }
+            } else {
+                consecutiveOnes = 0;
+            }
+        }
+        return unstuffedData.toString();
+    }
+
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+
+        // Input binary data frame
+        System.out.print("Enter the binary data frame: ");
+        String data = scanner.nextLine();
+
+        // Perform bit stuffing
+        String stuffedData = bitStuffing(data);
+        System.out.println("Stuffed Data: " + stuffedData);
+
+        // Perform bit unstuffing
+        String unstuffedData = bitUnstuffing(stuffedData);
+        System.out.println("Unstuffed Data: " + unstuffedData);
+
+        scanner.close();
+    }
+}
+----------------------------------------------------------------------------------
+
+import java.io.*;
+import java.net.*;
+public class FTCLIENT {
+public static void main(String args[]) throws IOException {
+    Socket s = new Socket("localhost", 8081);
+    PrintWriter put = new PrintWriter(s.getOutputStream(), true);
+    BufferedReader serverResponse = new BufferedReader(new InputStreamReader(s.getInputStream()));
+    BufferedReader userInputReader = new BufferedReader(new
+    InputStreamReader(System.in));
+    System.out.println("Enter the file name to transfer from the server:");
+    String fileName = userInputReader.readLine(); // Get file name from user
+    put.println(fileName); // Send file name to server
+
+// Check the first line of the server response
+String response = serverResponse.readLine();
+if (response != null && response.startsWith("ERROR")) {
+System.out.println("Server error: " + response);
+} else {
+// Prepare to receive the file content if no error message is received
+File receivedFile = new File("received_" + fileName);
+FileOutputStream fileOut = new FileOutputStream(receivedFile);
+BufferedInputStream fileReader = new BufferedInputStream(s.getInputStream());
+byte[] buffer = new byte[4096];
+int bytesRead;
+while ((bytesRead = fileReader.read(buffer)) != -1) {
+fileOut.write(buffer, 0, bytesRead);
+}
+fileOut.close(); // Close file output
+fileReader.close(); // Close input stream
+System.out.println("File received successfully.");
+}
+s.close(); // Close socket
+}
+}
+
+
+
+import java.io.*;
+import java.net.*;
+public class FTSERVER {
+    public static void main(String args[]) throws IOException {
+    ServerSocket ss = new ServerSocket(8081);
+    System.out.println("Server started, waiting for connection...");
+    Socket cs = ss.accept(); // Wait for client connection
+    System.out.println("Client connected.");
+    BufferedReader st = new BufferedReader(new InputStreamReader(cs.getInputStream()));
+    String requestedFile = st.readLine();
+    System.out.println("The requested file is: " + requestedFile);
+
+    File file = new File(requestedFile);
+
+PrintWriter put = new PrintWriter(cs.getOutputStream(), true); // Send messages to the client
+if (file.exists()) {
+// Send file content using a BufferedOutputStream
+BufferedInputStream fileReader = new BufferedInputStream(new
+FileInputStream(file));
+BufferedOutputStream outputStream = new
+BufferedOutputStream(cs.getOutputStream());
+byte[] buffer = new byte[4096]; // Buffer for reading file content
+int bytesRead;
+while ((bytesRead = fileReader.read(buffer)) != -1) {
+outputStream.write(buffer, 0, bytesRead);
+}
+fileReader.close();
+outputStream.flush(); // Ensure all data is sent
+outputStream.close();
+System.out.println("File transferred successfully.");
+} else {
+// Send an error message to the client
+put.println("ERROR: File not found");
+System.out.println("File does not exist.");
+}
+put.close();
+cs.close(); // Close client socket
+ss.close(); // Close server socket
+}
+}
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
